@@ -29,7 +29,7 @@ abstract class Model_A1_Sprig_User extends Sprig {
 		$this->_columns    = Kohana::config($this->_config)->columns;
 		$this->_user_model = Kohana::config($this->_config)->user_model;
 
-		$this->fields += array(
+		$this->_fields += array(
 			'id'       => new Sprig_Field_Auto,
 			'username' => new Sprig_Field_Char(array(
 				'empty'      => FALSE,
@@ -39,20 +39,24 @@ abstract class Model_A1_Sprig_User extends Sprig {
 				'filters'    => array('trim' => NULL),
 				'rules'      => array(
 					'not_empty' => NULL,
-					'regex'     => array('/^[\pL_.-]+/ui'),
+					'regex'     => array('/^[\pL_.-]+$/ui'),
 				),
 				'callbacks'  => array(
 					array($this, 'username_available'),
 				),
 			)),
 			'password' => new Sprig_Field_Password(array(
-				'hash_with'  => array($this, 'hash_password'),
+				'hash_with'  => NULL,
 				'min_length' => 5,
-				'max_length' => 42,
-				'filters'    => array('trim' => NULL),
+				'max_length' => 50,
+				'filters'    => array('trim' => NULL,),
+				'callbacks'  => array(
+					array($this, 'hash_password'),
+				),
 			)),
 			'password_confirm' => new Sprig_Field_Password(array(
 				'empty' => TRUE,
+				'hash_with'  => NULL,
 				'in_db' => FALSE,
 				'rules' => array(
 					'matches' => array('password'),
@@ -65,22 +69,25 @@ abstract class Model_A1_Sprig_User extends Sprig {
 				'editable' => FALSE,
 			)),
 			'logins'     => new Sprig_Field_Integer(array(
+				'default'  => 0,
 				'editable' => FALSE,
 			)),
 			'last_login' => new Sprig_Field_Integer(array(
+				'default'  => 0,
 				'editable' => FALSE,
 			)),
 		);
 	}
 
 	/**
-	 * Hash the password according to the A1 library
+	 * Hash callback using the A1 library
 	 *
 	 * @param   string  password to hash
 	 * @return  string
 	 */
-	protected function hash_password($password) {
-		return A1::instance($this->_config)->hash_password($password);
+	public function hash_password(Validate $array, $field) {
+		$pass = $array[$field];
+		$array[$field] = A1::instance($this->_config)->hash_password($pass);
 	}
 
 	/**

@@ -45,6 +45,8 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 		$values = array(
 			'username' => '',
 			'password' => '',
+			'password_confirm' => '',
+			'email' => '',
 		);
 
 		try
@@ -54,11 +56,16 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 		}
 		catch (Validate_Exception $e)
 		{
-			$errors = $e->array->errors('sentry');
+			$errors = $e->array->errors();
 		}
 
-		$this->assertTrue(isset($errors['username']));
-		$this->assertTrue(isset($errors['password']));
+		$this->assertArrayHasKey('username', $errors);
+		$this->assertContains('not_empty', $errors['username']);
+		$this->assertArrayHasKey('password', $errors);
+		$this->assertContains('not_empty', $errors['password']);
+		$this->assertArrayNotHasKey('password_confirm', $errors);
+		$this->assertArrayHasKey('email', $errors);
+		$this->assertContains('not_empty', $errors['email']);
 	}
 
 	/**
@@ -69,6 +76,7 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 		$values = array(
 			'username'  => '',
 			'password'  => 'some_pass',
+			'password_confirm' => 'some_pass',
 		);
 
 		try
@@ -78,11 +86,13 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 		}
 		catch (Validate_Exception $e)
 		{
-			$errors = $e->array->errors('sentry');
+			$errors = $e->array->errors();
 		}
 
-		$this->assertTrue(isset($errors['username']));
-		$this->assertFalse(isset($errors['password']));
+		$this->assertArrayHasKey('username', $errors);
+		$this->assertContains('not_empty', $errors['username']);
+		$this->assertArrayNotHasKey('password', $errors);
+		$this->assertArrayNotHasKey('password_confirm', $errors);
 	}
 
 	/**
@@ -99,10 +109,11 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 		}
 		catch (Validate_Exception $e)
 		{
-			$errors = $e->array->errors('sentry');
+			$errors = $e->array->errors();
 		}
 
-		$this->assertTrue(isset($errors['username']));
+		$this->assertArrayHasKey('username', $errors);
+		$this->assertContains('min_length', $errors['username']);
 	}
 
 	/**
@@ -119,18 +130,29 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 		}
 		catch (Validate_Exception $e)
 		{
-			$errors = $e->array->errors('sentry');
+			$errors = $e->array->errors();
 		}
 
-		$this->assertTrue(isset($errors['username']));
+		$this->assertArrayHasKey('username', $errors);
+		$this->assertContains('max_length', $errors['username']);
 	}
 
 	/**
-	 * Test validation with invalid username
+	 * Test validation with duplicate username
 	 */
-	public function testValidateInvalidUsername() {
+	public function testValidateDuplicateUsername() {
+		try
+		{
+			DB::insert('users', array('username'))
+				->values(array('JohnDoe'))->execute();
+		}
+		catch (Database_Exception $e)
+		{
+			echo $e->getMessage();
+		}
+
 		$user = Sprig::factory('user');
-		$user->username = 'some&/invalid(username';
+		$user->username = 'JohnDoe';
 
 		try
 		{
@@ -139,10 +161,32 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 		}
 		catch (Validate_Exception $e)
 		{
-			$errors = $e->array->errors('sentry');
+			$errors = $e->array->errors();
 		}
 
-		$this->assertTrue(isset($errors['username']));
+		$this->assertArrayHasKey('username', $errors);
+		$this->assertContains('username_available', $errors['username']);
+	}
+
+	/**
+	 * Test validation with invalid username
+	 */
+	public function testValidateInvalidUsername() {
+		$user = Sprig::factory('user');
+		$user->username = 'some&/inv alid(username';
+
+		try
+		{
+			$user->check();
+			$errors = array();
+		}
+		catch (Validate_Exception $e)
+		{
+			$errors = $e->array->errors();
+		}
+
+		$this->assertArrayHasKey('username', $errors);
+		$this->assertContains('regex', $errors['username']);
 	}
 
 	/**
@@ -153,6 +197,7 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 		$values = array(
 			'username'  => 'test_user',
 			'password'  => '',
+			'password_confirm' => '',
 		);
 
 		try
@@ -162,11 +207,13 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 		}
 		catch (Validate_Exception $e)
 		{
-			$errors = $e->array->errors('sentry');
+			$errors = $e->array->errors();
 		}
 
-		$this->assertFalse(isset($errors['username']));
-		$this->assertTrue(isset($errors['password']));
+		$this->assertArrayNotHasKey('username', $errors);
+		$this->assertArrayHasKey('password', $errors);
+		$this->assertContains('not_empty', $errors['password']);
+		$this->assertArrayNotHasKey('password_confirm', $errors);
 	}
 
 	/**
@@ -187,12 +234,13 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 		}
 		catch (Validate_Exception $e)
 		{
-			$errors = $e->array->errors('sentry');
+			$errors = $e->array->errors();
 		}
 
-		$this->assertFalse(isset($errors['username']));
-		$this->assertFalse(isset($errors['password']));
-		$this->assertTrue(isset($errors['password_confirm']));
+		$this->assertArrayNotHasKey('username', $errors);
+		$this->assertArrayNotHasKey('password', $errors);
+		$this->assertArrayHasKey('password_confirm', $errors);
+		$this->assertContains('matches', $errors['password_confirm']);
 	}
 
 	/**
@@ -213,12 +261,63 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 		}
 		catch (Validate_Exception $e)
 		{
-			$errors = $e->array->errors('sentry');
+			$errors = $e->array->errors();
 		}
 
-		$this->assertFalse(isset($errors['username']));
-		$this->assertFalse(isset($errors['password']));
-		$this->assertTrue(isset($errors['password_confirm']));
+		$this->assertArrayNotHasKey('username', $errors);
+		$this->assertArrayNotHasKey('password', $errors);
+		$this->assertArrayHasKey('password_confirm', $errors);
+		$this->assertContains('matches', $errors['password_confirm']);
+	}
+
+	/**
+	 * Test validation with empty email
+	 */
+	public function testValidateEmptyEmail() {
+		$user = Sprig::factory('user');
+		$values = array(
+			'username' => 'test_user',
+			'password' => 'test_pass',
+			'password_confirm' => 'test_pass',
+			'email' => '',
+		);
+
+		try
+		{
+			$user->check($values);
+			$errors = array();
+		}
+		catch (Validate_Exception $e)
+		{
+			$errors = $e->array->errors();
+		}
+
+		$this->assertArrayNotHasKey('username', $errors);
+		$this->assertArrayNotHasKey('password', $errors);
+		$this->assertArrayNotHasKey('password_confirm', $errors);
+		$this->assertArrayHasKey('email', $errors);
+		$this->assertContains('not_empty', $errors['email']);
+	}
+
+	/**
+	 * Test validation with invalid email
+	 */
+	public function testValidateInvalidEmail() {
+		$user = Sprig::factory('user');
+		$user->email = 'some/bad@email';
+
+		try
+		{
+			$user->check();
+			$errors = array();
+		}
+		catch (Validate_Exception $e)
+		{
+			$errors = $e->array->errors();
+		}
+
+		$this->assertArrayHasKey('email', $errors);
+		$this->assertContains('email', $errors['email']);
 	}
 
 	/**
@@ -229,20 +328,22 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 		$user->username = 'test_user';
 		$user->password = 'test_pass';
 		$user->password_confirm = 'test_pass';
-		$errors = array();
+		$user->email = 'good@email.com';
 
 		try
 		{
 			$user->check();
+			$errors = array();
 		}
 		catch (Validate_Exception $e)
 		{
-			$errors = $e->array->errors('sentry');
+			$errors = $e->array->errors();
 		}
 
-		$this->assertFalse(isset($errors['username']));
-		$this->assertFalse(isset($errors['password']));
-		$this->assertFalse(isset($errors['password_confirm']));
+		$this->assertArrayNotHasKey('username', $errors);
+		$this->assertArrayNotHasKey('password', $errors);
+		$this->assertArrayNotHasKey('password_confirm', $errors);
+		$this->assertArrayNotHasKey('email', $errors);
 	}
 
 	/**
@@ -263,12 +364,12 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 		}
 		catch (Validate_Exception $e)
 		{
-			$errors = $e->array->errors('sentry');
+			$errors = $e->array->errors();
 		}
 
-		$this->assertFalse(isset($errors['username']));
-		$this->assertFalse(isset($errors['password']));
-		$this->assertFalse(isset($errors['password_confirm']));
+		$this->assertArrayNotHasKey('username', $errors);
+		$this->assertArrayNotHasKey('password', $errors);
+		$this->assertArrayNotHasKey('password_confirm', $errors);
 
 		$model = Sprig::factory('user',array('username'=>'test_user'))
 			->load();
@@ -280,12 +381,62 @@ class Sentry_Model_User_FunctionalTest extends PHPUnit_Framework_TestCase {
 	 * Test change in username
 	 */
 	public function testChangeUsername() {
+		DB::insert('users', array('username'))
+			->values(array('test_user'))->execute();
+
+		$user = Sprig::factory('user', array('username'=>'test_user'))
+			->load();
+		$this->assertEquals('test_user', $user->username);
+
+		$user->username = 'test_name';
+		$user->update();
+
+		$SUT = DB::select()->from('users')->where('id', '=', $user->id)
+			->execute()->current();
+		$this->assertEquals('test_name', $SUT['username']);
 	}
 
 	/**
 	 * Test change in password
 	 */
 	public function testChangePassword() {
+		$pass = A1::instance('a1')->hash_password('test_pass');
+		DB::insert('users', array('username','password'))
+			->values(array('test_user', $pass))->execute();
+
+		$user = Sprig::factory('user', array('username'=>'test_user'))
+			->load();
+		$this->assertEquals($pass, $user->password);
+
+		$user->password = 'new_pass';
+		$user->update();
+		$user->load();	// Reload hashed password
+
+		$salt = A1::instance('a1')->find_salt($user->password);
+		$changed = A1::instance('a1')->hash_password('new_pass',$salt);
+
+		$SUT = DB::select()->from('users')->where('id', '=', $user->id)
+			->execute()->current();
+		$this->assertEquals($changed, $SUT['password']);
+	}
+
+	/**
+	 * Test change in email
+	 */
+	public function testChangeEmail() {
+		DB::insert('users', array('email'))
+			->values(array('some@email.com'))->execute();
+
+		$user = Sprig::factory('user', array('email'=>'some@email.com'))
+			->load();
+		$this->assertEquals('some@email.com', $user->email);
+
+		$user->email = 'new@email.com';
+		$user->update();
+
+		$SUT = DB::select()->from('users')->where('id', '=', $user->id)
+			->execute()->current();
+		$this->assertEquals('new@email.com', $SUT['email']);
 	}
 
 }

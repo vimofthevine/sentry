@@ -1,28 +1,29 @@
 <phpunit
-    bootstrap="../../index.php"
-    color="true"
-    testSuiteLoaderClass="PHPUnit_Runner_StandardTestSuiteLoader">
+	bootstrap="../../index.php"
+	color="true"
+	testSuiteLoaderClass="PHPUnit_Runner_StandardTestSuiteLoader">
 
-    <testsuites>
-        <testsuite name="Sentry Module Test Suite">
-            <directory>./tests/sentry</directory>
-        </testsuite>
-    </testsuites>
+	<testsuites>
+		<testsuite name="Sentry Module Test Suite">
+			<directory>./tests/sentry</directory>
+			<directory>./tests/a1</directory>
+		</testsuite>
+	</testsuites>
 
-    <groups>
-        <include>
-            <group>sentry</group>
-        </include>
-    </groups>
+	<groups>
+		<include>
+			<group>sentry</group>
+		</include>
+	</groups>
 
-    <filter>
-        <whitelist>
-            <directory suffix=".php">./classes</directory>
-        </whitelist>
-    </filter>
+	<filter>
+		<whitelist>
+			<directory suffix=".php">./classes</directory>
+		</whitelist>
+	</filter>
 
-    <logging>
-        <log type="coverage-html" target="coverage" charset="UTF-8"
-            yui="true" highlight="true" lowUpperBound="35" highLowerBound="70" />
-    </logging>
+	<logging>
+		<log type="coverage-html" target="coverage" charset="UTF-8"
+			yui="true" highlight="true" lowUpperBound="35" highLowerBound="70" />
+	</logging>
 </phpunit>
