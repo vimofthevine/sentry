@@ -63,7 +63,7 @@ abstract class Model_A1_Sprig_User extends Sprig {
 				),
 			)),
 			'role'       => new Sprig_Field_Char(array(
-				'choices'  => array('user', 'admin'),
+				'choices'  => array('user'=>'User', 'admin'=>'Admin'),
 			)),
 			'token'      => new Sprig_Field_Char(array(
 				'editable' => FALSE,
