@@ -8,7 +8,8 @@
  * @copyright   (c) 2010 Kyle Treubig
  * @license     MIT
  */
-class Model_Sentry_User extends Model_A1_Sprig_User implements Acl_Role_Interface, Acl_Resource_Interface {
+class Model_Sentry_User extends Model_A1_Sprig_User
+	implements Acl_Role_Interface, Acl_Resource_Interface {
 
 	/**
 	 * Initialize the Sprig model
@@ -22,6 +23,22 @@ class Model_Sentry_User extends Model_A1_Sprig_User implements Acl_Role_Interfac
 				'max_length' => 64,
 			)),
 		);
+	}
+
+	/**
+	 * Print username
+	 */
+	public function __toString() {
+		// If the model has not yet been loaded, load it
+		if ($this->state() === 'new' OR $this->state() === 'loading')
+		{
+			$this->load();
+		}
+
+		if ($this->loaded())
+			return $this->_original['username'];
+		else
+			return parent::__toString();
 	}
 
 	/**
